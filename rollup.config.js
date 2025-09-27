@@ -3,7 +3,6 @@ import { dts } from "rollup-plugin-dts";
 import { nodeResolve } from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import { terser } from "rollup-plugin-terser";
-import nodePolyfills from 'rollup-plugin-polyfill-node';
 import replace from '@rollup/plugin-replace';
 import alias from '@rollup/plugin-alias';
 import pkg from './package.json';
@@ -125,7 +124,6 @@ const createLottieConfig = (preset) => {
           '__RENDERER__': presetMap[preset].renderer,
         },
       }),
-      nodePolyfills(),
       commonjs({
         include: /node_modules/
       }),
