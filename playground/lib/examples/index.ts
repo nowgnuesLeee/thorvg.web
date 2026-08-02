@@ -51,6 +51,7 @@ import { effectDropShadowExample } from './effect-drop-shadow';
 import { sceneEffectsExample } from './scene-effects';
 import { errorHandlingExample } from './error-handling';
 import { accessorExample } from './accessor';
+import { towerStackExample } from './tower-stack';
 
 export * from './types';
 
@@ -92,6 +93,7 @@ export const showcaseExamples: ShowcaseExample[] = [
   maskingExample,
   maskingMethodsExample,
   sceneEffectsExample,
+  towerStackExample,
   viewportExample,
   // Text (alphabetically sorted by title)
   fontProviderExample,
