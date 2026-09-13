@@ -40,3 +40,5 @@ const nextConfig = {
 };
 
 export default nextConfig;
+
+// CI trigger: preview workflow test
