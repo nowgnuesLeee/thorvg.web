@@ -19,27 +19,19 @@ on:
       - '!**/*.md'
 
 jobs:
-  build-player:
-    name: Build and Validate Lottie Player
+  build-wasm:
+    name: Build WASM (${{ matrix.preset }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [default, sw, gl, wg, sw-lite, gl-lite, wg-lite, pthread]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
           submodules: recursive
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v5
-        with:
-          version: 10
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-          cache-dependency-path: 'pnpm-lock.yaml'
 
       - name: Setup Emscripten
         uses: emscripten-core/setup-emsdk@v16
@@ -59,11 +51,50 @@ jobs:
           meson --version
           ninja --version
 
+      - name: Build WASM
+        working-directory: packages/lottie-player
+        run: sh ./wasm_player_setup.sh ${{ matrix.preset }}
+
+      - name: Upload WASM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-${{ matrix.preset }}
+          path: packages/lottie-player/dist/
+          if-no-files-found: error
+
+  build-player:
+    name: Build and Validate Lottie Player
+    needs: build-wasm
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
+
       - name: Install pnpm dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Download WASM artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wasm-*
+          path: packages/lottie-player/dist/
+          merge-multiple: true
+
       - name: Build Lottie Player
-        run: pnpm --filter @thorvg/lottie-player build
+        run: pnpm --filter @thorvg/lottie-player build:js
 
       - name: Check build artifacts
         run: |
