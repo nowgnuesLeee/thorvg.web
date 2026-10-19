@@ -19,27 +19,19 @@ on:
       - '!**/*.md'
 
 jobs:
-  build-wcanvas:
-    name: Build and Validate WebCanvas
+  build-wasm:
+    name: Build WASM (${{ matrix.mode }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [default, pthread]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
           submodules: recursive
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v5
-        with:
-          version: 10
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-          cache-dependency-path: 'pnpm-lock.yaml'
 
       - name: Setup Emscripten
         uses: emscripten-core/setup-emsdk@v16
@@ -59,11 +51,50 @@ jobs:
           meson --version
           ninja --version
 
+      - name: Build WASM
+        working-directory: packages/webcanvas
+        run: sh ./wasm_wcanvas_setup.sh ${{ matrix.mode }}
+
+      - name: Upload WASM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-${{ matrix.mode }}
+          path: packages/webcanvas/dist/
+          if-no-files-found: error
+
+  build-wcanvas:
+    name: Build and Validate WebCanvas
+    needs: build-wasm
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
+
       - name: Install pnpm dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Download WASM artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wasm-*
+          path: packages/webcanvas/dist/
+          merge-multiple: true
+
       - name: Build WebCanvas
-        run: pnpm --filter @thorvg/webcanvas build
+        run: pnpm --filter @thorvg/webcanvas build:js
 
       - name: Check build artifacts
         run: |
